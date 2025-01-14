@@ -1,16 +1,24 @@
+import jwt from "jsonwebtoken";
+
 export const authMiddleware = (req, res, next) => {
-  const bearerHeader = req.headers["authorization"];
-  if (typeof bearerHeader !== undefined) {
-    const bearer = bearerHeader.split(" ");
-    const bearerToken = bearer[1];
-    (user) => {
-      req.user = user;
-    };
+  try {
+    const accessToken = req.cookie["accesstoken"];
+    console.log(accessToken);
 
-    console.log("token verified");
-  } else {
-    res.status(403);
+    if (accessToken == null) {
+      return res.status(401).send("Access denied. No token provided.");
+    }
+
+    const verified = jwt.verify(
+      accessToken,
+      process.env.JWT_KEY,
+      (err, user) => {
+        if (err) res.sendStatus(403);
+        req.user = user;
+        next();
+      }
+    );
+  } catch (error) {
+    res.status(500).json({ msg: error.message });
   }
-
-  next();
 };
